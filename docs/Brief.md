@@ -211,15 +211,3 @@ Week 4: Mobile auth, feed and stay details
 Week 5: Create-stay flow, region map, travel log
 
 Week 6: Deployment, README, ADRs and polish
-
-12. Planned ADRs
-
-ADR 001: Region-only location
-
-ADR 002: Working name “Lantern”
-
-ADR 003: React Native (Expo) with ASP.NET Core and EF Core
-
-ADR 004: Strip EXIF server-side
-
-ADR 005: Cursor-based pagination for the feed
