@@ -17,6 +17,7 @@ React Native (Expo) · ASP.NET Core · EF Core · PostgreSQL
 
 - [Project brief](docs/brief.md)
 - [Architecture decisions](docs/decisions/)
+- [Project Wireframes](docs/wireframes/)
 
 ## Getting started
 
