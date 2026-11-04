@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Secrets
+.env
+.env.*
+appsettings.*.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
