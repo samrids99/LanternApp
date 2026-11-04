@@ -64,3 +64,40 @@ A running record of what I did, what went wrong and what I learned. Newest entri
 - Scaffold the API solution and add CI, then scaffold the Expo app.
 - Write the design tokens.
 - Start Week 2: auth, region seeding and create-stay.
+
+---
+
+## 2026-11-04: API scaffold and CI
+
+**Done**
+
+- Scaffolded the API solution on .NET 10 with five projects: Domain, Application, Infrastructure, Api and UnitTests. References point inwards (Api → Application → Domain), so business logic doesn't depend on the database or web framework.
+- Pinned the SDK with `global.json` and reduced `Program.cs` to a minimal app with OpenAPI and a `/health` endpoint.
+- Added a root `.gitignore` covering .NET, Node/Expo and secrets.
+- Wrote the first GitHub Actions workflow (`api-ci.yml`): on every push to `main` and every PR touching `api/`, it restores, builds and tests on a clean Ubuntu machine.
+- Opened a PR for the scaffold. CI result: [green / failed, and what I fixed].
+
+**Decisions**
+
+- Moved to .NET 10 because .NET 8 support ends this month (ADR 007).
+- Used a layered architecture so logic is testable without a database (ADR 003).
+
+**Problems and fixes**
+
+- **242 files staged.** I nearly committed build output because the repo had no root `.gitignore`. `git status` only showed `src/` and `tests/` as collapsed folders, so I only found `bin/` and `obj/` by running `git status -uall`. Fixed by adding a `.gitignore` before committing.
+- **`master` vs `main`.** My default branch was `master`, but the workflow's push trigger was `main`, so CI wouldn't have run after merging. The PR trigger would still have worked, which made the problem easy to miss. Fixed by renaming the branch to `main` [or: by changing the trigger].
+- **PowerShell vs bash.** Wildcards like `src/*/*.csproj` don't expand in every shell, so I listed projects explicitly.
+
+**Learned**
+
+- CI starts from an empty machine each run, so it catches things that only worked locally.
+- The `paths` filter saves runs on unrelated changes, but would block merging if I made the check required and then opened a docs-only PR, because the workflow wouldn't run.
+- `--no-restore` and `--no-build` stop later steps repeating earlier work.
+- `.gitignore` should exist before the first scaffold, and checking `git status -uall` or `git diff --cached --stat` before committing is worth the few seconds.
+- A PR description should say what changed, why and how to test it, not list files.
+
+**Next**
+
+- Scaffold the Expo app and add `mobile-ci.yml`.
+- Write the design tokens.
+- Start Week 2: ASP.NET Core Identity and JWT auth, then region seeding and create-stay.
