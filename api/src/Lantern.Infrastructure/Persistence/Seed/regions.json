@@ -17,19 +17,19 @@
   },
   {
     "Id": 3,
-    "Name": "Yorkshire Dales",
-    "Type": "Area",
-    "ParentRegionId": 1,
-    "CentroidLat": 54.35,
-    "CentroidLng": -2.175
-  },
-  {
-    "Id": 4,
     "Name": "Bakewell",
     "Type": "Locality",
     "ParentRegionId": 2,
     "CentroidLat": 53.2134,
     "CentroidLng": -1.6748
+  },
+  {
+    "Id": 4,
+    "Name": "Yorkshire Dales",
+    "Type": "Area",
+    "ParentRegionId": 1,
+    "CentroidLat": 54.35,
+    "CentroidLng": -2.175
   },
   {
     "Id": 5,
