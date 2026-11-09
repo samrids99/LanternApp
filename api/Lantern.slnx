@@ -6,6 +6,7 @@
     <Project Path="src/Lantern.Infrastructure/Lantern.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Lantern.IntegrationTests/Lantern.IntegrationTests.csproj" />
     <Project Path="tests/Lantern.UnitTests/Lantern.UnitTests.csproj" />
   </Folder>
 </Solution>
