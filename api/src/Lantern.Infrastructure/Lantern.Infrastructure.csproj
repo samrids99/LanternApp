@@ -4,6 +4,16 @@
     <ProjectReference Include="..\Lantern.Application\Lantern.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+  <!-- Compile regions.json into the DLL as an embedded resource -->
+  <EmbeddedResource Include="Persistence\Seed\regions.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Let the integration tests see internal types in this assembly -->
+    <InternalsVisibleTo Include="Lantern.IntegrationTests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
