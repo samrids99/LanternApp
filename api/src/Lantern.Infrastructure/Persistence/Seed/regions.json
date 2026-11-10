@@ -35,7 +35,7 @@
     "Id": 5,
     "Name": "Hawes",
     "Type": "Locality",
-    "ParentRegionId": 3,
+    "ParentRegionId": 2,
     "CentroidLat": 54.3038,
     "CentroidLng": -2.1969
   }
