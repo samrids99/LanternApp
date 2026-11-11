@@ -1,4 +1,5 @@
 using Lantern.Infrastructure.Persistence;
+using Lantern.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,6 +26,19 @@ public static class DependencyInjection
     services.AddDbContext<LanternDbContext>(options =>
         options.UseNpgsql(connectionString));
 
+    services.AddScoped<RegionSeeder>();
+
     return services;
+  }
+
+  public static async Task SeedDevelopmentDataAsync(
+    this IServiceProvider services,
+    CancellationToken ct = default)
+  {
+    // DbContext is scoped (one per unit of work), so it can't be taken from
+    // the root provider. Create a scope, use it, and dispose it.
+    await using var scope = services.CreateAsyncScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<RegionSeeder>();
+    await seeder.SeedAsync(ct: ct);
   }
 }

@@ -31,6 +31,7 @@ A centroid is an approximate centre of the region, deliberately never a real pit
 - Parents are referenced by ID only.
 - Types are the strings `Country`, `Area` or `Locality`.
 - Maximum depth is three levels (ADR 006).
+- A Region should never be deleted as it could have related entities as children
 
 ## Adding a region
 
@@ -41,3 +42,6 @@ A centroid is an approximate centre of the region, deliberately never a real pit
 ## Validation
 
 Regions are validated in `Lantern.IntegrationTests/Persistence/RegionSeedTests.cs`, which currently checks for a valid name and valid coordinates.
+Any updated field in the json file will cause an update on development build.
+Only run in development.
+Order of entities does not matter.
