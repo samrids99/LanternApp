@@ -83,6 +83,7 @@ internal sealed class RegionSeeder
     var byId = regions.ToDictionary(r => r.Id);
 
     // "hops" up the tree: country 0, area 1, locality 2.
+    // a local function can consume variables from the outer method, so it can see byId and regions.
     int Depth(Region region)
     {
       var hops = 0;
