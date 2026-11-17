@@ -101,3 +101,54 @@ A running record of what I did, what went wrong and what I learned. Newest entri
 - Scaffold the Expo app and add `mobile-ci.yml`.
 - Write the design tokens.
 - Start Week 2: ASP.NET Core Identity and JWT auth, then region seeding and create-stay.
+
+---
+
+## 2026-11-17: Seeder integration tests and the region read path
+
+**Done**
+
+- Added Testcontainers integration tests for `RegionSeeder`: a shared
+  Postgres fixture applying the real migrations, and tests for insert,
+  idempotency, update-on-difference, input order, never-delete and parent
+  links.
+- `SeedAsync` now returns `RegionSeedResult(Inserted, Updated)` so tests
+  assert on counts, not log text.
+- Started the read path: `RegionDto` (positional record, `RegionType`
+  enum) and `IRegionRepository` with one method, `GetAllAsync`, ordered by
+  `Id`.
+- Configured `JsonStringEnumConverter` in Api (not yet verified: no
+  endpoint).
+
+**Decisions**
+
+- Enum on the DTO, not a string, so the generated TypeScript client gets a
+  union of valid values. Cost: the Domain enum is now part of the public
+  contract.
+- Serializer settings live in Api, not on the Domain enum.
+- Repository returns DTOs (reads) and will project in the query. No
+  service until there is real logic to put in it.
+- Only `GetAllAsync` for now. `GetById` and child lookups wait for a real
+  caller.
+
+**Learned**
+
+- Breaking the code on purpose is what proves a test.
+- Forcing every row to `Modified` made the idempotency test and the
+  changed-value test fail (`Updated = 5`). The exact count caught
+  something an end-state assertion would have missed.
+- Records, structs and classes differ in copying and equality, and
+  `public` versus `internal` decides who may depend on a type.
+- Enums serialise as numbers by default, so a string enum has to be
+  configured, and that belongs in Api.
+
+**Next**
+
+- `RegionRepository` in Infrastructure (order, project, `AsNoTracking`),
+  with a test proving the order.
+- Collection fixture so test classes share one container.
+- `GET /regions`, then `curl` and `/openapi/v1.json` to check the enum
+  appears as names.
+- ADRs: enum on the wire, and the ADR 008 edits (sort reasoning, tests now
+  exist).
+- Proximity test.
