@@ -21,9 +21,9 @@ internal sealed class RegionSeeder
 
   // The list is a parameter so a test can pass its own data (reversed,
   // edited, and so on). The default is the embedded file.
-  public async Task SeedAsync(
-      IReadOnlyList<Region>? regions = null,
-      CancellationToken ct = default)
+  public async Task<RegionSeedResult> SeedAsync(
+    IReadOnlyList<Region>? regions = null,
+    CancellationToken ct = default)
   {
     regions ??= RegionSeedLoader.Load();
 
@@ -75,6 +75,8 @@ internal sealed class RegionSeeder
     _logger.LogInformation(
         "Region seed complete: {Inserted} inserted, {Updated} updated.",
         inserted, updated);
+
+    return new RegionSeedResult(inserted, updated);
   }
 
   private static List<Region> OrderByDepth(IReadOnlyList<Region> regions)
