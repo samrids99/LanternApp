@@ -1,4 +1,4 @@
-﻿namespace Lantern.UnitTests;
+namespace Lantern.UnitTests;
 
 public class UnitTest1
 {
