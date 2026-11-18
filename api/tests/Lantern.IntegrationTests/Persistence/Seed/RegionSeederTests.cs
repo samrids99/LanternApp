@@ -12,129 +12,129 @@ namespace Lantern.IntegrationTests.Persistence.Seed;
 // runs before EACH test and gives it an empty table.
 public class RegionSeederTests : IClassFixture<PostgresFixture>, IAsyncLifetime
 {
-  private readonly PostgresFixture _fixture;
+    private readonly PostgresFixture _fixture;
 
-  public RegionSeederTests(PostgresFixture fixture) => _fixture = fixture;
+    public RegionSeederTests(PostgresFixture fixture) => _fixture = fixture;
 
-  public Task InitializeAsync() => _fixture.ResetAsync();
-  public Task DisposeAsync() => Task.CompletedTask;
+    public Task InitializeAsync() => _fixture.ResetAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 
-  [Fact]
-  public async Task Seeding_an_empty_database_inserts_every_region()
-  {
-    var regions = RegionSeedLoader.Load();
+    [Fact]
+    public async Task Seeding_an_empty_database_inserts_every_region()
+    {
+        var regions = RegionSeedLoader.Load();
 
-    var result = await SeedAsync(regions);
+        var result = await SeedAsync(regions);
 
-    Assert.Equal(regions.Count, result.Inserted);
-    Assert.Equal(0, result.Updated);
-  }
+        Assert.Equal(regions.Count, result.Inserted);
+        Assert.Equal(0, result.Updated);
+    }
 
-  [Fact]
-  public async Task Seeding_twice_does_not_create_duplicates()
-  {
-    await SeedAsync(RegionSeedLoader.Load());
-    await SeedAsync(RegionSeedLoader.Load());
+    [Fact]
+    public async Task Seeding_twice_does_not_create_duplicates()
+    {
+        await SeedAsync(RegionSeedLoader.Load());
+        await SeedAsync(RegionSeedLoader.Load());
 
-    await using var db = _fixture.CreateContext();
-    Assert.Equal(RegionSeedLoader.Load().Count, await db.Regions.CountAsync());
-  }
+        await using var db = _fixture.CreateContext();
+        Assert.Equal(RegionSeedLoader.Load().Count, await db.Regions.CountAsync());
+    }
 
-  [Fact]
-  public async Task A_changed_value_in_the_file_updates_the_existing_row()
-  {
-    var regions = RegionSeedLoader.Load();
-    await SeedAsync(regions);
+    [Fact]
+    public async Task A_changed_value_in_the_file_updates_the_existing_row()
+    {
+        var regions = RegionSeedLoader.Load();
+        await SeedAsync(regions);
 
-    var original = regions.First(r => r.Type == RegionType.Locality);
-    var changed = regions
-        .Select(r => r.Id == original.Id ? Copy(r, lat: original.CentroidLat + 1) : Copy(r))
-        .ToList();
+        var original = regions.First(r => r.Type == RegionType.Locality);
+        var changed = regions
+            .Select(r => r.Id == original.Id ? Copy(r, lat: original.CentroidLat + 1) : Copy(r))
+            .ToList();
 
-    var result = await SeedAsync(changed);
+        var result = await SeedAsync(changed);
 
-    await using var db = _fixture.CreateContext();
-    var stored = await db.Regions.SingleAsync(r => r.Id == original.Id);
-    Assert.Equal(new RegionSeedResult(0, 1), result);
-  }
+        await using var db = _fixture.CreateContext();
+        var stored = await db.Regions.SingleAsync(r => r.Id == original.Id);
+        Assert.Equal(new RegionSeedResult(0, 1), result);
+    }
 
-  [Fact]
-  public async Task The_order_of_the_input_does_not_matter()
-  {
-    // Localities first, countries last: a child would arrive before
-    // its parent if the seeder did not sort by depth.
-    var reversed = RegionSeedLoader.Load().Reverse().ToList();
+    [Fact]
+    public async Task The_order_of_the_input_does_not_matter()
+    {
+        // Localities first, countries last: a child would arrive before
+        // its parent if the seeder did not sort by depth.
+        var reversed = RegionSeedLoader.Load().Reverse().ToList();
 
-    await SeedAsync(reversed);
+        await SeedAsync(reversed);
 
-    await using var db = _fixture.CreateContext();
-    Assert.Equal(reversed.Count, await db.Regions.CountAsync());
-  }
+        await using var db = _fixture.CreateContext();
+        Assert.Equal(reversed.Count, await db.Regions.CountAsync());
+    }
 
-  [Fact]
-  public async Task A_region_missing_from_the_input_is_never_deleted()
-  {
-    var regions = RegionSeedLoader.Load();
-    await SeedAsync(regions);
+    [Fact]
+    public async Task A_region_missing_from_the_input_is_never_deleted()
+    {
+        var regions = RegionSeedLoader.Load();
+        await SeedAsync(regions);
 
-    // Seed again with the last region removed from the input.
-    var removed = regions.Last();
-    var without = regions.Where(r => r.Id != removed.Id).Select(r => Copy(r)).ToList();
+        // Seed again with the last region removed from the input.
+        var removed = regions.Last();
+        var without = regions.Where(r => r.Id != removed.Id).Select(r => Copy(r)).ToList();
 
-    await SeedAsync(without);
+        await SeedAsync(without);
 
-    await using var db = _fixture.CreateContext();
-    Assert.True(
-        await db.Regions.AnyAsync(r => r.Id == removed.Id),
-        $"Region {removed.Id} '{removed.Name}' was deleted, but the seeder must never delete.");
-  }
-
-  [Fact]
-  public async Task Parent_links_are_preserved()
-  {
-    var regions = RegionSeedLoader.Load();
-    await SeedAsync(regions);
-
-    await using var db = _fixture.CreateContext();
-    var stored = await db.Regions.ToDictionaryAsync(r => r.Id);
-
-    Assert.All(regions, expected =>
+        await using var db = _fixture.CreateContext();
         Assert.True(
-            expected.ParentRegionId == stored[expected.Id].ParentRegionId,
-            $"Region {expected.Id} '{expected.Name}' should have parent " +
-            $"{expected.ParentRegionId?.ToString() ?? "none"}, " +
-            $"but has {stored[expected.Id].ParentRegionId?.ToString() ?? "none"}."));
-  }
+            await db.Regions.AnyAsync(r => r.Id == removed.Id),
+            $"Region {removed.Id} '{removed.Name}' was deleted, but the seeder must never delete.");
+    }
 
-  [Fact]
-  public async Task Seeding_unchanged_data_a_second_time_writes_nothing()
-  {
-    await SeedAsync(RegionSeedLoader.Load());
+    [Fact]
+    public async Task Parent_links_are_preserved()
+    {
+        var regions = RegionSeedLoader.Load();
+        await SeedAsync(regions);
 
-    var second = await SeedAsync(RegionSeedLoader.Load());
+        await using var db = _fixture.CreateContext();
+        var stored = await db.Regions.ToDictionaryAsync(r => r.Id);
 
-    Assert.Equal(new RegionSeedResult(0, 0), second);
-  }
+        Assert.All(regions, expected =>
+            Assert.True(
+                expected.ParentRegionId == stored[expected.Id].ParentRegionId,
+                $"Region {expected.Id} '{expected.Name}' should have parent " +
+                $"{expected.ParentRegionId?.ToString() ?? "none"}, " +
+                $"but has {stored[expected.Id].ParentRegionId?.ToString() ?? "none"}."));
+    }
 
-  // --- helpers ---
+    [Fact]
+    public async Task Seeding_unchanged_data_a_second_time_writes_nothing()
+    {
+        await SeedAsync(RegionSeedLoader.Load());
 
-  // Each seed run gets its own context and seeder, like a real startup.
-  private async Task<RegionSeedResult> SeedAsync(IReadOnlyList<Region> regions)
-  {
-    await using var db = _fixture.CreateContext();
-    var seeder = new RegionSeeder(db, NullLogger<RegionSeeder>.Instance);
-    return await seeder.SeedAsync(regions);
-  }
+        var second = await SeedAsync(RegionSeedLoader.Load());
 
-  // Region has required init properties and no "with", so edit a copy by
-  // building a new one. Also avoids reusing an object a context has tracked.
-  private static Region Copy(Region r, double? lat = null) => new()
-  {
-    Id = r.Id,
-    Name = r.Name,
-    Type = r.Type,
-    ParentRegionId = r.ParentRegionId,
-    CentroidLat = lat ?? r.CentroidLat,
-    CentroidLng = r.CentroidLng
-  };
+        Assert.Equal(new RegionSeedResult(0, 0), second);
+    }
+
+    // --- helpers ---
+
+    // Each seed run gets its own context and seeder, like a real startup.
+    private async Task<RegionSeedResult> SeedAsync(IReadOnlyList<Region> regions)
+    {
+        await using var db = _fixture.CreateContext();
+        var seeder = new RegionSeeder(db, NullLogger<RegionSeeder>.Instance);
+        return await seeder.SeedAsync(regions);
+    }
+
+    // Region has required init properties and no "with", so edit a copy by
+    // building a new one. Also avoids reusing an object a context has tracked.
+    private static Region Copy(Region r, double? lat = null) => new()
+    {
+        Id = r.Id,
+        Name = r.Name,
+        Type = r.Type,
+        ParentRegionId = r.ParentRegionId,
+        CentroidLat = lat ?? r.CentroidLat,
+        CentroidLng = r.CentroidLng
+    };
 }
