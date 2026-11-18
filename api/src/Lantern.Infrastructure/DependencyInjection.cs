@@ -1,3 +1,4 @@
+using Lantern.Application.Regions;
 using Lantern.Infrastructure.Persistence;
 using Lantern.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddScoped<RegionSeeder>();
+        services.AddScoped<IRegionRepository, RegionRepository>();
 
         return services;
     }
