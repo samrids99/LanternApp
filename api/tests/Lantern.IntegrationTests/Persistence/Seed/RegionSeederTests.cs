@@ -7,10 +7,10 @@ using Xunit;
 
 namespace Lantern.IntegrationTests.Persistence.Seed;
 
-// IClassFixture: the container is shared across the tests in this class.
 // IAsyncLifetime: xUnit makes a new instance per test, so InitializeAsync
 // runs before EACH test and gives it an empty table.
-public class RegionSeederTests : IClassFixture<PostgresFixture>, IAsyncLifetime
+[Collection(PostgresCollection.Name)]
+public class RegionSeederTests : IAsyncLifetime
 {
     private readonly PostgresFixture _fixture;
 
