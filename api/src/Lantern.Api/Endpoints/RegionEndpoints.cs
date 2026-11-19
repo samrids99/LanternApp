@@ -1,4 +1,5 @@
 using Lantern.Application.Regions;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Lantern.Api.Endpoints;
 
@@ -11,6 +12,8 @@ public static class RegionEndpoints
         return app;
     }
 
-    private static async Task<IResult> GetAll(IRegionRepository regions, CancellationToken ct)
-        => Results.Ok(await regions.GetAllAsync(ct));
+    private static async Task<Ok<IReadOnlyList<RegionDto>>> GetAll(
+        IRegionRepository regions,
+        CancellationToken ct)
+        => TypedResults.Ok(await regions.GetAllAsync(ct));
 }
