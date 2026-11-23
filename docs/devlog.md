@@ -152,3 +152,48 @@ A running record of what I did, what went wrong and what I learned. Newest entri
 - ADRs: enum on the wire, and the ADR 008 edits (sort reasoning, tests now
   exist).
 - Proximity test.
+
+## 2026-11-19: First endpoint: GET /regions
+
+**What I did**
+- Chose minimal APIs over controllers and wrote ADR 010, including the costs I'm accepting (less built-in structure, I have to keep it tidy myself).
+- Built `GET /regions` as a `RegionEndpoints` class with `MapGroup("/regions")` and a handler taking `IRegionRepository` and a `CancellationToken`.
+- Checked it with `curl` and the OpenAPI document, then added a test for how far a locality can be from its parent region.
+
+**What went wrong, and what I learned**
+- **Route and handler disagreed.** I copied the `/{id:int}` example, so `GET /regions` returned 404 while `GET /regions/3` would have returned every region. The route, handler name, parameters and body all have to describe the same operation. I also now understand that `MapGroup` adds its prefix to each endpoint's path.
+- **A 404 on correct-looking code.** Before suspecting the code again: is the running process the new build, and is `MapRegionEndpoints()` actually called? [fill in which it was]
+- **`IResult` hides the response type.** The OpenAPI document showed `200 OK` with no content. Switching to `TypedResults.Ok` made the schema appear. `Ok<T>` is the type, `TypedResults` is the factory.
+- **My seed tests missed a real data bug.** The curl output showed Hawes under the Peak District instead of the Yorkshire Dales. My tests checked that a parent *exists*, not that it's the *right* one. The new proximity test (haversine, 50 km) failed with "Hawes is 111.16 km away from Peak District", and passed once I fixed the data. The threshold sits between the valid pairs (about 15 km) and the error.
+- **`Assert.Fail` and the compiler.** Removing a `return;` after it broke the build: the method throws, but the compiler doesn't know it never returns. Also, `Assert.NotEmpty` inside an `Assert.All` lambda guards nothing, because an empty list never runs the lambda.
+
+**Also from 18 Nov (not logged then)**
+- One Postgres container is shared by all test classes with a collection fixture. `ResetAsync` is what keeps tests independent: without it, leftover rows make failures depend on test order.
+- Added an `.editorconfig` and ran the formatter as its own commit first, so the feature commits stayed readable. The formatter stripped the byte order mark from the generated EF migration, so `charset = utf-8-bom` for migrations stops that.
+
+**Decisions**
+- Minimal APIs in `Lantern.Api/Endpoints/` (ADR 010).
+- 18 tests passing, PR merged.
+
+## 2026-11-23: Strict numbers and HTTP-level tests
+
+**What I did**
+- Set `JsonNumberHandling.Strict`: the OpenAPI document had typed `id` and the coordinates as number-or-string, and afterwards `id` was a plain `integer`.
+- Added `Microsoft.AspNetCore.Mvc.Testing`, a `LanternApiFactory`, and four tests in `Api/RegionEndpointsTests.cs` that parse the raw JSON.
+- Wrote ADR 011 (enums as names, strict numbers).
+
+**What went wrong, and what I learned**
+- **"Hosting failed to start" after seeding.** The seeder log was fine; a stale terminal was still running the old API on port 5073. `lsof -i :5073` found it.
+- **`dotnet add package` took the latest version** (11.0.0) for a net10.0 project and failed with `NU1202`. I now pin a version that matches the target framework, and replace a floating `10.0.*` with the exact one.
+- **The factory runs the app as `Testing`, not `Development`.** That way user secrets never load and the dev seeding doesn't run. If the connection string key is wrong, the app fails to start instead of quietly using another database. I use `UseSetting` for the connection string.
+- **Parsing raw JSON in the tests** (`JsonDocument`, `ValueKind`) rather than deserialising into `RegionDto`, which would accept either enum shape and hide the thing I'm testing.
+- **I proved each test can fail:** removing `JsonStringEnumConverter` broke the enum test, and `WhenWritingNull` broke the null-parent test (a missing property, not a wrong value).
+- **A claim I got wrong.** I expected the contract test to guard `NumberHandling.Strict`, but `GET /regions` doesn't read a body and OpenAPI isn't mapped in `Testing`. The line is currently unguarded. A passing suite only tells me about what's actually tested.
+
+**Decisions**
+- Enums as names, strict numbers, configured in the Api layer (ADR 011).
+- 22 tests passing.
+
+**Still open**
+- A test for strict numbers, once an endpoint takes a request body.
+- Seed README and licence for the region data; ADR 008 edits; tests for the seeder's missing-parent and parent-loop errors; the placeholder unit test.
