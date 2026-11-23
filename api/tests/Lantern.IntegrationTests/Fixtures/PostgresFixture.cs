@@ -5,14 +5,14 @@ using Xunit;
 
 namespace Lantern.IntegrationTests.Fixtures;
 
-// One instance per test class (via IClassFixture). Starts a throwaway
-// Postgres once, applies the real migrations once, and hands out contexts.
 public sealed class PostgresFixture : IAsyncLifetime
 {
     // Same major version as the dev database, so tests run against
     // what the app really uses.
     private readonly PostgreSqlContainer _container =
         new PostgreSqlBuilder("postgres:17").Build();
+
+    public string ConnectionString => _container.GetConnectionString();
 
     public async Task InitializeAsync()
     {
@@ -31,7 +31,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     public LanternDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<LanternDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
+            .UseNpgsql(ConnectionString)
             .Options;
 
         return new LanternDbContext(options);
