@@ -13,6 +13,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
 });
 
 var app = builder.Build();
