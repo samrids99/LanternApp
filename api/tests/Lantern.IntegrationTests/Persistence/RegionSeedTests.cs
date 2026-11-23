@@ -1,3 +1,4 @@
+using Lantern.Domain.Regions;
 using Lantern.Infrastructure.Persistence.Seed;
 using Xunit;
 
@@ -5,6 +6,10 @@ namespace Lantern.IntegrationTests.Persistence;
 
 public class RegionSeedTests
 {
+    // Max separation set as 50km, most towns are within 20km of their parent region,
+    // but some are further away. This is a reasonable limit to catch any data entry errors.
+    private const double MaxSeparationBetweenLocalityAndAreaKm = 50.0;
+
     [Fact]
     public void Every_region_has_a_name()
     {
@@ -38,7 +43,7 @@ public class RegionSeedTests
     }
 
     [Fact]
-    public void Every_region_has_a_unique_id()
+    public void Every_region_has_a_Valid_id()
     {
         var regions = RegionSeedLoader.Load();
 
@@ -80,8 +85,7 @@ public class RegionSeedTests
         Assert.NotEmpty(regions);
 
         // if a region is a 'Country' it should not have a ParentRegionId
-        // RegionType is not comparable to int, so we use the underlying value of the enum (1 for Country)
-        var countryRegions = regions.Where(r => (int)r.Type == 1);
+        var countryRegions = regions.Where(r => r.Type == RegionType.Country);
         Assert.All(countryRegions, r =>
         {
             Assert.True(
@@ -90,7 +94,7 @@ public class RegionSeedTests
         });
 
         // all others should have a ParentRegionId
-        var nonCountryRegions = regions.Where(r => (int)r.Type != 1);
+        var nonCountryRegions = regions.Where(r => r.Type != RegionType.Country);
         Assert.All(nonCountryRegions, r =>
         {
             Assert.True(
@@ -138,5 +142,55 @@ public class RegionSeedTests
                 current = parent;
             }
         });
+    }
+
+    [Fact]
+    public void Localities_should_be_within_reasonable_distance_of_their_parent_regions()
+    {
+        var regions = RegionSeedLoader.Load();
+
+        Assert.NotEmpty(regions);
+
+        var byId = regions.ToDictionary(r => r.Id);
+
+        // if region is a 'Locality' it should be within 50km of its parent region
+        var localityRegions = regions.Where(r => r.Type == RegionType.Locality);
+        Assert.NotEmpty(localityRegions);
+        Assert.All(localityRegions, r =>
+        {
+            if (r.ParentRegionId is not int parentId)
+            {
+                Assert.Fail(
+                    $"Locality region {r.Id} '{r.Name}' has no ParentRegionId.");
+                return;
+            }
+
+            if (!byId.TryGetValue(parentId, out var parent))
+            {
+                Assert.Fail(
+                    $"Locality region {r.Id} '{r.Name}' has ParentRegionId {r.ParentRegionId}, which does not exist.");
+                return;
+            }
+
+            var distance = HaversineDistance(r.CentroidLat, r.CentroidLng, parent.CentroidLat, parent.CentroidLng);
+
+            Assert.True(
+                distance <= MaxSeparationBetweenLocalityAndAreaKm,
+                $"Locality region {r.Id} '{r.Name}' is {distance:F2} km away from its parent region {parent.Id} '{parent.Name}', which exceeds the {MaxSeparationBetweenLocalityAndAreaKm} km limit.");
+        });
+
+    }
+
+    // Using the Haversine formula to calculate the distance between two points on the Earth.
+    private static double HaversineDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371; // Radius of the Earth in kilometers
+        var dLat = (lat2 - lat1) * (Math.PI / 180);
+        var dLon = (lon2 - lon1) * (Math.PI / 180);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * (Math.PI / 180)) * Math.Cos(lat2 * (Math.PI / 180)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return R * c; // Distance in kilometers
     }
 }

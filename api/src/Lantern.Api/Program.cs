@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Lantern.Api.Endpoints;
 using Lantern.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +25,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.MapRegionEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();
