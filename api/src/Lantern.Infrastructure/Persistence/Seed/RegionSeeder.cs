@@ -114,6 +114,11 @@ internal sealed class RegionSeeder
             return hops;
         }
 
-        return regions.OrderBy(Depth).ToList();
+        // Run Depth for every region up front, so the missing-parent and loop
+        // checks always fire. LINQ can skip computing sort keys for a single
+        // element, which let a bad parent through to the database.
+        var depths = regions.ToDictionary(r => r.Id, Depth);
+
+        return regions.OrderBy(r => depths[r.Id]).ToList();
     }
 }

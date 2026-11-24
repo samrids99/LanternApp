@@ -116,6 +116,40 @@ public class RegionSeederTests : IAsyncLifetime
         Assert.Equal(new RegionSeedResult(0, 0), second);
     }
 
+    [Fact]
+    public async Task A_parent_loop_throws_and_writes_nothing()
+    {
+        // Two regions that are each other's parent: a loop.
+        var loopA = new Region { Id = 1, Name = "LoopA", Type = RegionType.Locality, CentroidLat = 0, CentroidLng = 0, ParentRegionId = 2 };
+        var loopB = new Region { Id = 2, Name = "LoopB", Type = RegionType.Locality, CentroidLat = 0, CentroidLng = 0, ParentRegionId = 1 };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => SeedAsync(new List<Region> { loopA, loopB }));
+
+        // Both names start with "Loop", so this passes whichever region the message names.
+        Assert.Contains("Loop", ex.Message);
+
+        // The check runs before any insert, so nothing should have been written.
+        await using var db = _fixture.CreateContext();
+        Assert.Equal(0, await db.Regions.CountAsync());
+    }
+
+    [Fact]
+    public async Task A_missing_parent_throws_and_writes_nothing()
+    {
+        var orphan = new Region { Id = 1, Name = "Orphan", Type = RegionType.Locality, CentroidLat = 0, CentroidLng = 0, ParentRegionId = 999 };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => SeedAsync(new List<Region> { orphan }));
+
+        // The message names the region and the parent ID it couldn't find.
+        Assert.Contains("Orphan", ex.Message);
+        Assert.Contains("999", ex.Message);
+
+        await using var db = _fixture.CreateContext();
+        Assert.Equal(0, await db.Regions.CountAsync());
+    }
+
     // --- helpers ---
 
     // Each seed run gets its own context and seeder, like a real startup.
